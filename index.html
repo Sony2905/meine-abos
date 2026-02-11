@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Abo App</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #ffffff; --card: #f8fafc; --text: #0f172a; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 100px; }
+        
+        h1 { font-size: 1.2rem; text-align: center; margin-bottom: 20px; }
+
+        /* Mobile Card Style */
+        .input-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        input, select { width: 100%; margin-bottom: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 16px; /* Verhindert Zoom auf iOS */ }
+        
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .btn-add { background: var(--primary); color: white; }
+
+        /* Scrollbare Liste */
+        .abo-item { background: white; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .info { display: flex; flex-direction: column; }
+        .name { font-weight: 700; font-size: 1.1rem; }
+        .date { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+        .date.urgent { color: #e11d48; font-weight: bold; }
+        
+        .price-section { text-align: right; }
+        .price { font-weight: bold; color: #10b981; }
+
+        /* Sticky Footer für Gesamtsumme */
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .delete-btn { color: #ef4444; font-size: 0.8rem; background: none; border: none; padding: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Meine Abos</h1>
+
+    <div class="input-card">
+        <input type="text" id="name" placeholder="Name">
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="price" placeholder="€" style="flex: 1;">
+            <select id="cycle" style="flex: 1;">
+                <option value="1">Monatlich</option>
+                <option value="12">Jährlich</option>
+            </select>
+        </div>
+        <input type="date" id="start-date">
+        <button class="btn btn-add" onclick="addAbo()">Hinzufügen</button>
+    </div>
+
+    <div id="list-container"></div>
+
+    <div class="footer">
+        <div><strong>Gesamt:</strong></div>
+        <div id="total-price" style="font-size: 1.2rem; font-weight: 800;">0.00 €</div>
+    </div>
+
+<script>
+    let abos = JSON.parse(localStorage.getItem('myMobileAbos')) || [];
+
+    function getNextDate(start, cycle) {
+        let next = new Date(start);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        while (next < today) { next.setMonth(next.getMonth() + parseInt(cycle)); }
+        return next;
+    }
+
+    function render() {
+        const container = document.getElementById('list-container');
+        container.innerHTML = '';
+        
+        // SORTIERUNG: Das nächste Datum zuerst
+        abos.sort((a, b) => getNextDate(a.startDate, a.cycle) - getNextDate(b.startDate, b.cycle));
+
+        let total = 0;
+        const today = new Date();
+
+        abos.forEach((abo, index) => {
+            const next = getNextDate(abo.startDate, abo.cycle);
+            const diffDays = Math.ceil((next - today) / (1000*60*60*24));
+            const monthly = abo.cycle == 12 ? abo.price / 12 : abo.price;
+            total += monthly;
+
+            container.innerHTML += `
+                <div class="abo-item">
+                    <div class="info">
+                        <span class="name">${abo.name}</span>
+                        <span class="date ${diffDays <= 3 ? 'urgent' : ''}">
+                            ${diffDays <= 0 ? 'Heute fällig!' : 'In ' + diffDays + ' Tagen (' + next.toLocaleDateString() + ')'}
+                        </span>
+                        <button class="delete-btn" onclick="deleteAbo(${index})">Entfernen</button>
+                    </div>
+                    <div class="price-section">
+                        <div class="price">${monthly.toFixed(2)}€</div>
+                        <div style="font-size: 0.7rem; color: #94a3b8;">pro Monat</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        document.getElementById('total-price').innerText = total.toFixed(2) + ' €';
+        localStorage.setItem('myMobileAbos', JSON.stringify(abos));
+    }
+
+    function addAbo() {
+        const n = document.getElementById('name').value;
+        const p = document.getElementById('price').value;
+        const c = document.getElementById('cycle').value;
+        const d = document.getElementById('start-date').value;
+        if(n && p && d) {
+            abos.push({name: n, price: parseFloat(p), cycle: c, startDate: d});
+            render();
+        }
+    }
+
+    function deleteAbo(i) { abos.splice(i, 1); render(); }
+    render();
+</script>
+</body>
+</html>
