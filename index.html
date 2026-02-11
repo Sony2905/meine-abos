@@ -3,45 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Abo App</title>
+    <title>Abo Manager Pro</title>
     <style>
-        :root { --primary: #2563eb; --bg: #ffffff; --card: #f8fafc; --text: #0f172a; }
+        :root { --primary: #2563eb; --secondary: #64748b; --bg: #ffffff; --card: #f8fafc; --text: #0f172a; --danger: #ef4444; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 100px; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 110px; color: var(--text); }
         
-        h1 { font-size: 1.2rem; text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 1.4rem; text-align: center; margin: 10px 0 20px 0; color: var(--primary); }
 
-        /* Mobile Card Style */
-        .input-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        input, select { width: 100%; margin-bottom: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 16px; /* Verhindert Zoom auf iOS */ }
+        /* Eingabe-Bereich */
+        .input-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        input, select { width: 100%; margin-bottom: 12px; padding: 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; background: white; }
         
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .btn-add { background: var(--primary); color: white; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; transition: opacity 0.2s; }
+        .btn-add { background: var(--primary); color: white; margin-bottom: 10px; }
+        
+        /* Hilfs-Buttons für Backup */
+        .backup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-backup { background: var(--secondary); color: white; padding: 10px; font-size: 14px; }
 
-        /* Scrollbare Liste */
-        .abo-item { background: white; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .info { display: flex; flex-direction: column; }
-        .name { font-weight: 700; font-size: 1.1rem; }
-        .date { display: flex; font-size: 0.8rem; color: #64748b; margin-top: 4px; }
-        .date.urgent { color: #e11d48; font-weight: bold; }
+        /* Abo Liste */
+        .abo-item { background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .info { display: flex; flex-direction: column; flex: 1; }
+        .name { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; }
+        .date { font-size: 0.85rem; color: #64748b; }
+        .urgent { color: #e11d48; font-weight: bold; }
         
-        .price-section { text-align: right; }
-        .price { font-weight: bold; color: #10b981; }
+        .price-section { text-align: right; margin-left: 10px; }
+        .price { font-weight: bold; color: #10b981; font-size: 1.1rem; }
+        .delete-btn { color: var(--danger); font-size: 0.8rem; background: none; border: none; padding: 8px 0; text-align: left; font-weight: 600; }
 
-        /* Sticky Footer für Gesamtsumme */
-        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        /* Footer */
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; padding: 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
         
-        .delete-btn { color: #ef4444; font-size: 0.8rem; background: none; border: none; padding: 5px; }
+        #import-file { display: none; }
     </style>
 </head>
 <body>
 
-    <h1>Meine Abos</h1>
+    <h1>💸 Meine Abos</h1>
 
     <div class="input-card">
-        <input type="text" id="name" placeholder="Name">
+        <input type="text" id="name" placeholder="Name des Abos">
         <div style="display: flex; gap: 10px;">
-            <input type="number" id="price" placeholder="€" style="flex: 1;">
+            <input type="number" id="price" placeholder="Preis €" style="flex: 1;">
             <select id="cycle" style="flex: 1;">
                 <option value="1">Monatlich</option>
                 <option value="12">Jährlich</option>
@@ -49,22 +54,29 @@
         </div>
         <input type="date" id="start-date">
         <button class="btn btn-add" onclick="addAbo()">Hinzufügen</button>
+        
+        <div class="backup-row">
+            <button class="btn btn-backup" onclick="exportData()">📤 Export</button>
+            <button class="btn btn-backup" onclick="triggerImport()">📥 Import</button>
+        </div>
+        <input type="file" id="import-file" accept=".json" onchange="importData(event)">
     </div>
 
     <div id="list-container"></div>
 
     <div class="footer">
-        <div><strong>Gesamt:</strong></div>
-        <div id="total-price" style="font-size: 1.2rem; font-weight: 800;">0.00 €</div>
+        <div><strong>Monatliche Fixkosten:</strong></div>
+        <div id="total-price" style="font-size: 1.3rem; font-weight: 800; color: var(--primary);">0.00 €</div>
     </div>
 
 <script>
-    let abos = JSON.parse(localStorage.getItem('myMobileAbos')) || [];
+    let abos = JSON.parse(localStorage.getItem('myMobileAbosPlanner')) || [];
 
     function getNextDate(start, cycle) {
         let next = new Date(start);
         const today = new Date();
         today.setHours(0,0,0,0);
+        if(isNaN(next)) return null;
         while (next < today) { next.setMonth(next.getMonth() + parseInt(cycle)); }
         return next;
     }
@@ -73,15 +85,28 @@
         const container = document.getElementById('list-container');
         container.innerHTML = '';
         
-        // SORTIERUNG: Das nächste Datum zuerst
-        abos.sort((a, b) => getNextDate(a.startDate, a.cycle) - getNextDate(b.startDate, b.cycle));
+        // Sortieren: Nächste Zahlung zuerst
+        abos.sort((a, b) => {
+            let dA = getNextDate(a.startDate, a.cycle);
+            let dB = getNextDate(b.startDate, b.cycle);
+            return (dA || 0) - (dB || 0);
+        });
 
         let total = 0;
         const today = new Date();
+        today.setHours(0,0,0,0);
 
         abos.forEach((abo, index) => {
             const next = getNextDate(abo.startDate, abo.cycle);
-            const diffDays = Math.ceil((next - today) / (1000*60*60*24));
+            let dateLabel = "Kein Datum";
+            let isUrgent = false;
+
+            if(next) {
+                const diffDays = Math.ceil((next - today) / (1000*60*60*24));
+                dateLabel = diffDays === 0 ? "Heute fällig!" : "In " + diffDays + " Tagen";
+                if(diffDays <= 3) isUrgent = true;
+            }
+
             const monthly = abo.cycle == 12 ? abo.price / 12 : abo.price;
             total += monthly;
 
@@ -89,21 +114,19 @@
                 <div class="abo-item">
                     <div class="info">
                         <span class="name">${abo.name}</span>
-                        <span class="date ${diffDays <= 3 ? 'urgent' : ''}">
-                            ${diffDays <= 0 ? 'Heute fällig!' : 'In ' + diffDays + ' Tagen (' + next.toLocaleDateString() + ')'}
-                        </span>
-                        <button class="delete-btn" onclick="deleteAbo(${index})">Entfernen</button>
+                        <span class="date ${isUrgent ? 'urgent' : ''}">${dateLabel}</span>
+                        <button class="delete-btn" onclick="deleteAbo(${index})">Löschen</button>
                     </div>
                     <div class="price-section">
                         <div class="price">${monthly.toFixed(2)}€</div>
-                        <div style="font-size: 0.7rem; color: #94a3b8;">pro Monat</div>
+                        <div style="font-size: 0.7rem; color: #94a3b8;">mtl.</div>
                     </div>
                 </div>
             `;
         });
 
         document.getElementById('total-price').innerText = total.toFixed(2) + ' €';
-        localStorage.setItem('myMobileAbos', JSON.stringify(abos));
+        localStorage.setItem('myMobileAbosPlanner', JSON.stringify(abos));
     }
 
     function addAbo() {
@@ -114,10 +137,51 @@
         if(n && p && d) {
             abos.push({name: n, price: parseFloat(p), cycle: c, startDate: d});
             render();
+            document.getElementById('name').value = '';
+            document.getElementById('price').value = '';
+        } else {
+            alert("Bitte alles ausfüllen!");
         }
     }
 
-    function deleteAbo(i) { abos.splice(i, 1); render(); }
+    function deleteAbo(i) {
+        if(confirm("Abo entfernen?")) {
+            abos.splice(i, 1);
+            render();
+        }
+    }
+
+    // BACKUP FUNKTIONEN
+    function exportData() {
+        if(abos.length === 0) return alert("Keine Daten zum Exportieren.");
+        const dataStr = JSON.stringify(abos);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const link = document.createElement('a');
+        link.setAttribute("href", dataUri);
+        link.setAttribute("download", "abo_backup.json");
+        link.click();
+    }
+
+    function triggerImport() { document.getElementById('import-file').click(); }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if(Array.isArray(imported)) {
+                    if(confirm("Bestehende Liste mit Backup überschreiben?")) {
+                        abos = imported;
+                        render();
+                    }
+                }
+            } catch(err) { alert("Fehler beim Einlesen der Datei."); }
+        };
+        reader.readAsText(file);
+    }
+
     render();
 </script>
 </body>
